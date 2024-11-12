@@ -109,8 +109,7 @@ Redirecting the ouput log to a file and running the process in background can be
 make GPU=3 MODEL_NAME=test_model experiments/test_model_lr0.0001_ep20_batch64 &> make.out &
 ```
 
-#Classification
-# Classification Pipeline for Cardiac Conditions
+# Downstream task: classification of hearth failure patients
 
 This repository provides a pipeline for classifying medical data, specifically targeting cardiac conditions such as **amyloidosis** and **heart failure**. The main focus is on using machine learning algorithms for classification based on clinical features extracted from Italian Electronic Health Records (EHRs).
 
@@ -138,7 +137,7 @@ This repository provides a pipeline for classifying medical data, specifically t
 ### 5. **Plots and Visualizations:**
 - The repository provides functions to visualize the F1-scores using boxplots, aiding in model comparison and performance analysis.
 
-## How to Run the Code:
+### How to Run the Code:
 - Make sure to have all required dependencies installed (e.g., `CatBoost`, `XGBoost`, `LightGBM`, `pandas`, `sklearn`, etc.).
 - Configure paths in the `config.py` file to match your environment and dataset.
 - Run the code by executing the main script which handles preprocessing, classification, and evaluation.
