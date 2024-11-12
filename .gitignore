@@ -1,0 +1,15 @@
+.env
+*~
+*iob
+ner/data
+__pycache__
+*.out
+saved_results
+catboost_info
+database/
+..bfg-report/ 
+bfg-1.14.0.jar
+bfg.jar
+database
+models
+
