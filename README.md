@@ -9,11 +9,12 @@ Repository for assessing transformer-based Named Entity Recognition (NER) models
 
 ## 📋 Overview
 
-This project implements and evaluates three transformer-based NER models for extracting structured clinical information from Italian cardiac patient anamneses:
+This project implements and evaluates multiple NER models for extracting structured clinical information from Italian cardiac patient anamneses:
 
 - **SpaCy** (Best performance: 97% F1-score)
 - **Flair** 
 - **MultiCoNER** (based on [MultiCoNER baseline](https://github.com/amzn/multiconer-baseline))
+- **Baseline** (Dictionary-based approach)
 
 ### Clinical Features Extracted
 
@@ -67,12 +68,80 @@ source .env/bin/activate  # On Linux/Mac
 
 3. **Install required packages**
 ```bash
+pip install -r requirements.txt
+# For MultiCoNER-specific requirements:
 pip install -r multiconer-baseline/custom_requirements.txt
 ```
 
 ### Check GPU availability
 ```bash
 nvidia-smi
+```
+
+## 📁 Project Structure
+```
+NLP_Italian_EHRs/
+│
+├── baseline/                        # Dictionary-based baseline model
+│   ├── baseline.py                 # Main baseline implementation
+│   ├── baseline_dictionary.json    # Medical terms dictionary v1
+│   ├── baseline_dictionary_v2.json # Medical terms dictionary v2
+│   └── Makefile.txt                # Baseline-specific commands
+│
+├── flair/                          # Flair NER implementation
+│   ├── Makefile                    # Flair-specific build commands
+│   ├── ner.py                      # NER model implementation
+│   ├── run_ner.py                  # Training/inference runner
+│   └── to_iob.py                   # IOB format converter
+│
+├── multiconer-baseline/            # MultiCoNER transformer implementation
+│   ├── model/                      # Model architectures
+│   ├── utils/                      # Utility functions
+│   ├── __init__.py
+│   ├── custom_requirements.txt    # MultiCoNER dependencies
+│   ├── evaluate.py                # Model evaluation
+│   ├── fine_tune.py               # Fine-tuning script
+│   ├── log.py                     # Logging utilities
+│   ├── predict_tags.py            # Inference script
+│   ├── requirements.txt           # Base requirements
+│   └── train_model.py             # Main training script
+│
+├── spacy/                          # SpaCy NER implementation
+│   ├── Makefile                    # SpaCy-specific commands
+│   ├── base_config.cfg            # Base configuration
+│   ├── config.cfg                 # Training configuration
+│   ├── config_dbmdz.cfg           # DBMDZ model config
+│   ├── predict.py                 # Inference script
+│   ├── predict_dbmdz_*.iob        # Prediction outputs
+│   └── to_iob.py                  # IOB format converter
+│
+├── scripts/                        # Utility scripts
+│   ├── agreement_annotators.py    # Inter-annotator agreement
+│   ├── conlleval.py              # CoNLL evaluation
+│   ├── create_trainset.py        # Dataset preparation
+│   ├── custom_eval.py            # Custom evaluation metrics
+│   ├── extract_ananmesis.py      # Extract anamnesis from EHRs
+│   ├── merge.py                  # Merge annotations
+│   ├── post_annotation.py        # Post-processing
+│   ├── score.py                  # Scoring utilities
+│   └── stats.py                  # Dataset statistics
+│
+├── tokenizer/                     # Custom tokenization
+│   ├── __init__.py
+│   └── tokenizer.py              # Tokenizer implementation
+│
+├── data/                         # Dataset directory (user-provided)
+│   ├── train.*.conll            # Training data
+│   ├── dev.*.conll              # Development data
+│   └── test.*.conll             # Test data
+│
+├── experiments/                  # Training outputs
+│   └── [model_name]/            # Model-specific results
+│
+├── .gitignore                   # Git ignore rules
+├── Makefile                     # Root build automation
+├── README.md                    # This file
+└── requirements.txt             # Python dependencies
 ```
 
 ## 📊 Data Format
@@ -83,11 +152,16 @@ nvidia-smi
 
 If you have your own Italian clinical data, place files in the `data` directory:
 ```
-NLP_Italian_EHRs/ner$ ls data/
-anamnesi.a.iob  anamnesi.b.iob  anamnesi.txt  
-dev.a.conll     dev.b.conll
-train.a.conll   train.b.conll
-test.a.conll    test.b.conll
+data/
+├── anamnesi.a.iob    # Annotator A annotations
+├── anamnesi.b.iob    # Annotator B annotations
+├── anamnesi.txt      # Raw text
+├── train.a.conll     # Training set (annotator A)
+├── train.b.conll     # Training set (annotator B)
+├── dev.a.conll       # Development set (annotator A)
+├── dev.b.conll       # Development set (annotator B)
+├── test.a.conll      # Test set (annotator A)
+└── test.b.conll      # Test set (annotator B)
 ```
 
 ### Data Format Specification
@@ -110,9 +184,42 @@ ipertensione B-NOHY
 . O
 ```
 
-## 🛠️ Makefile Usage
+## 🛠️ Usage
 
-The Makefile simplifies command execution for training and inference.
+### Using the Baseline Model
+
+The baseline model uses a dictionary-based approach:
+```bash
+cd baseline/
+python baseline.py --input ../data/anamnesi.txt --dictionary baseline_dictionary_v2.json
+```
+
+### Using SpaCy
+
+Train SpaCy model:
+```bash
+cd spacy/
+python -m spacy train config.cfg --output ./output --paths.train ../data/train.conll --paths.dev ../data/dev.conll
+```
+
+Inference:
+```bash
+python predict.py --model ./output/model-best --input ../data/test.txt
+```
+
+### Using Flair
+```bash
+cd flair/
+python run_ner.py --train ../data/train.conll --dev ../data/dev.conll --test ../data/test.conll
+```
+
+### Using MultiCoNER
+
+See the main Makefile usage section below for detailed MultiCoNER commands.
+
+## 🔧 Makefile Usage (MultiCoNER)
+
+The root Makefile simplifies MultiCoNER model training and inference.
 
 ### Available Variables
 
@@ -152,21 +259,6 @@ make CORPUS=b data/train.b.conll
 make experiments/xlm_roberta_base_lr0.0001_ep20_batch64
 ```
 
-This executes:
-```bash
-export CUDA_VISIBLE_DEVICES="2"
-train_model.py --iob_tagging ris \
-  --train data/train.b.conll \
-  --dev data/dev.b.conll \
-  --out_dir experiments/xlm_roberta_base_lr0.0001_ep20_batch64 \
-  --model_name xlm_roberta_base \
-  --gpus 1 \
-  --epochs 20 \
-  --encoder_model xlm-roberta-base \
-  --batch_size 64 \
-  --lr 0.0001
-```
-
 **Customize parameters:**
 ```bash
 # Dry run to see command
@@ -190,28 +282,6 @@ make GPU=0 ../data/your_anamnesis_output_spacy.iob
 - `-B`: Force rebuild target file
 - `-n`: Show commands without executing (dry run)
 - `GPU=-1`: Use CPU instead of GPU
-
-Example with options:
-```bash
-make GPU=0 ../data/your_anamnesis_output_spacy.iob -B -n
-```
-
-## 📁 Project Structure
-```
-.
-├── data/                    # Dataset directory (user-provided)
-├── ner/                     # NER model implementations
-│   ├── spacy/              # SpaCy model
-│   ├── flair/              # Flair model
-│   └── multiconer/         # MultiCoNER baseline
-├── utils/                   # Utility functions
-│   └── data_conversion.py  # Excel to .form conversion
-├── models/                  # Trained model weights
-├── experiments/            # Training output directory
-├── Makefile               # Build automation
-├── requirements.txt       # Python dependencies
-└── README.md
-```
 
 ## 🔬 Research Context
 
@@ -246,7 +316,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👥 Authors
 
-- **Sara Mazzucato** - Corresponding Author - [sara.mazzucato@santannapisa.it](mailto:sara.mazzucato.phd@gmail.com)
+- **Sara Mazzucato** - Corresponding Author - [sara.mazzucato.phd@gmail.com](mailto:sara.mazzucato.phd@gmail.com)
 - Andrea Bandini, Daniele Sartiano, Giuseppe Vergaro, Stefano Dalmiani, Michele Emdin, Silvestro Micera, Calogero Maria Oddo, Claudio Passino, Sara Moccia
 
 ## 🙏 Acknowledgments
