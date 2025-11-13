@@ -1,0 +1,12 @@
+eval:
+	make eval_dev
+	make eval_test
+
+baseline_output_test.conll baseline_output_dev.conll:
+	python3 baseline.py < ../data/proximity_care_train.conll
+
+eval_dev: baseline_output_dev.conll
+	python3 ../scripts/conlleval.py < $<
+
+eval_test: baseline_output_test.conll
+	python3 ../scripts/conlleval.py < $<
