@@ -78,6 +78,16 @@ pip install -r multiconer-baseline/custom_requirements.txt
 nvidia-smi
 ```
 
+## 🏥 Clinical Implementation
+
+For healthcare institutions seeking to deploy this tool for cardiac amyloidosis 
+screening, see [CLINICAL_IMPLEMENTATION.md](CLINICAL_IMPLEMENTATION.md) for 
+practical guidance on deployment pathways, costs, and integration strategies.
+
+⚠️ **Important**: This is a research tool. Clinical validation and usability 
+testing are required before deployment.
+
+
 ## 📁 Project Structure
 ```
 NLP_Italian_EHRs/
@@ -141,6 +151,7 @@ NLP_Italian_EHRs/
 ├── .gitignore                   # Git ignore rules
 ├── Makefile                     # Root build automation
 ├── README.md                    # This file
+├── CLINICAL_IMPLEMENTATION.md   # Clinical deployment guide
 └── requirements.txt             # Python dependencies
 ```
 
